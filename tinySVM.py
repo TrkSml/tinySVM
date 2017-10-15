@@ -1,3 +1,9 @@
+#
+# This is my personal implementation for Support Vector Machines using the next material:
+# http://www.cs.cmu.edu/~guestrin/Class/10701-S07/Slides/kernels.pdf
+#
+# __author__= Tarek Samaali
+
 import numpy as np 
 import sys
 
@@ -6,6 +12,7 @@ from cvxopt import solvers
 
 solvers.options['show_progress'] = False
 
+#Preparing the different kernel functions
 def Linear(x1,x2):
 	return np.dot(x1,x2.T)
 
@@ -18,6 +25,7 @@ def RBF(x1,x2,sigma=1):
 def Hyperbolic_Tangent(x1,x2,gamma=1,C=0):
 	return np.tanh(gamma*np.dot(x1,x2.T)+C)
 
+#This should be a small test for our input kernel
 def test_kernel(kernel):
 	if kernel:
 		if not kernel in ['linear','poly','rbf','tanh']:
@@ -26,6 +34,7 @@ def test_kernel(kernel):
 			'
 			sys.exit(0)
 
+#Constructing the kernel matrix ( Kernel Trick )
 def construct_kernel(X,kernel=None):
 
 	if kernel:
@@ -72,10 +81,13 @@ class SVM:
 		total_set=set(list(self.Y))
 		total_list=list(total_set)
 
+		# We will deal with binary classification
+		# No more than two target values are accepted
 		if not len(set(list(self.Y)))<=2:
 			print "The target must contain two values .. Sorry :("
 			sys.exit(0)
-
+			
+		# A dictionary to map the target values onto the predicted signs
 		self.dict={}
 		if total_list[0]>0:
 			self.dict[1]=total_list[0]
@@ -90,15 +102,20 @@ class SVM:
 
 		matrix_X=construct_kernel(X,self.kernel)
 		matrix_Y=np.dot(self.Y.T,self.Y)
+		
+		#Now we are dealing with a quadratic programming problem
+		#The dual problem is written under a specific format
+		#From which matrices are extracted for our optimization problem
 
 		K=np.dot(matrix_Y,matrix_X)
-
 		P = matrix(K,tc='d')
 		q = matrix(-np.ones((number_of_samples, 1)),tc='d')
 		G = matrix(-np.eye(number_of_samples),tc='d')
 		h = matrix(np.zeros(number_of_samples),tc='d')
 		A = matrix(Y.reshape(1, -1),tc='d')
 		b = matrix(np.zeros(1),tc='d')
+		
+		# The CVOXPT solver takes care of the rest
 		solutions = solvers.qp(P,q,G,h,A,b)
 
 		self.solutions=solutions
@@ -108,6 +125,9 @@ class SVM:
 	def transform_under_constraints(self,C=None):	
 
 		self.solutions=np.ravel(self.solutions['x'])
+		
+		# With respect to the previously cited constraints
+		# We apply some filtering to our Lagrangian multipliers
 		if C :
 			if C<0:
 				print 'Error: Positive value needed' 
@@ -127,12 +147,14 @@ class SVM:
 		output=np.array([])
 		self.alph=self.transform_under_constraints()
 		
+		# This term will hold the inner dot 
 		WX=np.zeros(X.shape[0])
+		
+		# The next term wil hold the bias value
 		b0=[]
 
 		for x in X:		
 			if not self.kernel:
-
 				for x_ii,y_ii,alph_ii in zip(X,self.Y,self.alph):
 						WX+=y_ii*alph_ii*Linear(x_ii,x.T)
 						
@@ -154,7 +176,10 @@ class SVM:
 
 		b=np.mean(np.array(b0))
 
+		#Predict the new values
 		output=np.append(output,np.sign(WX+b))
+		
+		#Use our dictionary for final output
 		output=np.array(map(lambda x:self.dict[x],output))
 
 		return output
@@ -178,17 +203,6 @@ if __name__ == '__main__':
 
 	main(X,Y,X_predict,'tanh')
 	
-
-#print finetune_model(X,Y,,np.array([[8,9,8,9],[1,1,-3,2],[1,0,1,-1]]))
-
-
-
-			
-
-
-
-
-# print 'The primal objective is: ',sol['primal objective']
 
 
 
