@@ -133,7 +133,7 @@ class SVM:
 				print 'Error: Positive value needed' 
 				return
 			else:
-				return np.array(map(lambda x: x if (x>=0 and x<self.margin) else 0,self.solutions))
+				return np.array(map(lambda x: x if (x>=0 and x<self.margin) else (0*(x<0)+C*(x>C)),self.solutions))
 		else:
 			return np.array(map(lambda x: x if x>=0 else 0,self.solutions))
 
